@@ -1,0 +1,12 @@
+[project]
+name = "hello_api"
+version = "0.1.0"
+description = "A tiny FastAPI app with /hello and /goodbye endpoints."
+requires-python = ">=3.12"
+dependencies = ["fastapi (>=0.162.0,<0.163.0)", "uvicorn (>=0.54.0,<0.55.0)"]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
