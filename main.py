@@ -19,6 +19,11 @@ FORTUNE_PROMPT = (
     "Write a one-sentence, software-themed fortune-cookie message. "
     "Reply with only that sentence."
 )
+ASK_SYSTEM_INSTRUCTION = (
+    "You answer questions from the public. "
+    "Answer in three sentences or fewer, in plain text."
+)
+ASK_MAX_QUESTION_LENGTH = 200
 
 app = FastAPI()
 
@@ -49,13 +54,18 @@ def gemini_client() -> genai.Client:
     )
 
 
-def ask_gemini(prompt: str) -> str:
+def ask_gemini(
+    prompt: str, max_output_tokens: int = 100, system_instruction: str | None = None
+) -> str:
     client = gemini_client()
     try:
         response = client.models.generate_content(
             model=os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite"),
             contents=prompt,
-            config=types.GenerateContentConfig(max_output_tokens=100),
+            config=types.GenerateContentConfig(
+                max_output_tokens=max_output_tokens,
+                system_instruction=system_instruction,
+            ),
         )
     except GoogleAuthError:
         logger.exception("Gemini call failed: no usable credentials")
@@ -92,6 +102,26 @@ def haiku():
 @app.get("/fortune")
 def fortune():
     return {"fortune": ask_gemini(FORTUNE_PROMPT)}
+
+
+@app.get("/ask")
+def ask(q: str | None = None):
+    # Validate before touching Gemini: bad input must never cost money.
+    question = (q or "").strip()
+    if not question:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Query parameter 'q' is required and must not be empty."},
+        )
+    if len(question) > ASK_MAX_QUESTION_LENGTH:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Query parameter 'q' must be {ASK_MAX_QUESTION_LENGTH} characters or fewer."},
+        )
+    answer = ask_gemini(
+        question, max_output_tokens=200, system_instruction=ASK_SYSTEM_INSTRUCTION
+    )
+    return {"answer": answer}
 
 
 if __name__ == "__main__":

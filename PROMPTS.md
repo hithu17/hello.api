@@ -84,3 +84,22 @@ Do not modify main.py or any application code. Only prepare a plan for the missi
 ## 2026-11-04 21:10
 
 Implement the approved Plan 02 now. Create plans/02_gemini_endpoints.md and update PROMPTS.md with the original Gemini implementation prompt and timestamp. Documentation changes only. Do not modify application code.
+
+## 2026-11-08 04:51 (logged retroactively, since the session was in plan mode)
+
+Add a GET endpoint /ask that takes a query parameter q, sends it to Gemini
+using the same client and settings as /haiku and /fortune, and returns the
+answer as JSON.
+
+This endpoint will be public on the internet, and every call costs money, so:
+- Reject q if it's missing, empty, or longer than 200 characters, with a 4xx
+  status code and a clear JSON error message.
+- Limit the answer to about 200 output tokens.
+- Use a system instruction that tells the model to answer in three sentences
+  or fewer.
+
+Update the README. Follow the rules in CLAUDE.md.
+
+## 2026-11-08 04:57
+
+The plan is approved. Implement Plan 03 now. Start by creating a new branch, as CLAUDE.md requires.
