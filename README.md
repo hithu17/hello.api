@@ -1,21 +1,22 @@
 # hello_api
 
-A tiny FastAPI app with four endpoints:
+A tiny FastAPI app with five endpoints:
 
-| Method | Path       | Response                                                       |
-|--------|------------|----------------------------------------------------------------|
-| GET    | `/hello`   | `{"message": "Hey there! 👋"}`                                 |
-| GET    | `/goodbye` | `{"message": "Catch you later! ✌️"}`                           |
-| GET    | `/haiku`   | `{"haiku": "..."}`: a short DevOps haiku written by Gemini     |
-| GET    | `/fortune` | `{"fortune": "..."}`: a one-sentence software fortune by Gemini |
+| Method | Path          | Response                                                       |
+|--------|---------------|----------------------------------------------------------------|
+| GET    | `/hello`      | `{"message": "Hey there! 👋"}`                                 |
+| GET    | `/goodbye`    | `{"message": "Catch you later! ✌️"}`                           |
+| GET    | `/haiku`      | `{"haiku": "..."}`: a short DevOps haiku written by Gemini     |
+| GET    | `/fortune`    | `{"fortune": "..."}`: a one-sentence software fortune by Gemini |
+| GET    | `/ask?q=...`  | `{"answer": "..."}`: Gemini's short answer to your question    |
 
-`/haiku` and `/fortune` call Google's Gemini model on Vertex AI through the [google-genai](https://pypi.org/project/google-genai/) SDK. Their prompts are fixed in the code, they take no input, and each response is capped at about 100 output tokens.
+`/haiku`, `/fortune` and `/ask` call Google's Gemini model on Vertex AI through the [google-genai](https://pypi.org/project/google-genai/) SDK. `/haiku` and `/fortune` use prompts fixed in the code, take no input, and are capped at about 100 output tokens each. For `/ask`, see [The /ask endpoint](#the-ask-endpoint).
 
 ## Requirements
 
 - Python 3.12 or newer
 - [Poetry](https://python-poetry.org/) 2.x
-- For `/haiku` and `/fortune`: a Google Cloud project with the Vertex AI API enabled, plus the [gcloud CLI](https://cloud.google.com/sdk/docs/install) for local credentials
+- For `/haiku`, `/fortune` and `/ask`: a Google Cloud project with the Vertex AI API enabled, plus the [gcloud CLI](https://cloud.google.com/sdk/docs/install) for local credentials
 
 ## Install
 
@@ -63,15 +64,27 @@ curl http://localhost:8080/hello
 curl http://localhost:8080/goodbye
 curl http://localhost:8080/haiku
 curl http://localhost:8080/fortune
+curl "http://localhost:8080/ask?q=What%20is%20Kubernetes%3F"
 ```
 
 Interactive API docs are at http://localhost:8080/docs.
 
 `/hello` and `/goodbye` work without any Google Cloud setup.
 
+### The /ask endpoint
+
+`/ask` sends your question in the `q` query parameter to Gemini and returns `{"answer": "..."}`. The endpoint is meant to be public and every call costs money, so it's tightly limited:
+
+- **Input:** `q` is required, can't be empty or only whitespace, and can be at most **200 characters** (surrounding whitespace is trimmed first). Otherwise you get **400** with a JSON error, and Gemini is never called:
+  - `{"error": "Query parameter 'q' is required and must not be empty."}`
+  - `{"error": "Query parameter 'q' must be 200 characters or fewer."}`
+- **Output:** answers are capped at about **200 output tokens**, and a system instruction tells the model to answer in **three sentences or fewer**.
+
+Remember to URL-encode the question (for example, spaces become `%20`).
+
 ### Gemini errors
 
-If a Gemini call can't be made, `/haiku` and `/fortune` return JSON such as `{"error": "..."}` instead of crashing:
+If a Gemini call can't be made, `/haiku`, `/fortune` and `/ask` return JSON such as `{"error": "..."}` instead of crashing:
 
 | Status | When                                                                          |
 |--------|-------------------------------------------------------------------------------|
